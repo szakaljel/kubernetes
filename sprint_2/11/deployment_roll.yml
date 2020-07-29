@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment-rolling
+  namespace: pgs-upskill
+  labels:
+    project: nginx-deployment-rolling
+spec:
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 50%
+      maxUnavailable: 1
+  replicas: 5
+  selector:
+    matchLabels:
+      object-group: nginx-deployment-rolling
+  template:
+    metadata:
+      labels:
+        object-group: nginx-deployment-rolling
+    spec:
+      containers:
+        - name: nginx
+          image: nginx
+          ports:
+            - containerPort: 80

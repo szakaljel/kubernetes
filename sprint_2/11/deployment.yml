@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment-recreate
+  namespace: pgs-upskill
+  labels:
+    project: nginx-deployment-recreate
+spec:
+  strategy:
+    type: Recreate
+  replicas: 2
+  selector:
+    matchLabels:
+      object-group: nginx-deployment-recreate
+  template:
+    metadata:
+      labels:
+        object-group: nginx-deployment-recreate
+    spec:
+      containers:
+        - name: nginx
+          image: nginx
+          ports:
+            - containerPort: 80
