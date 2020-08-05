@@ -1,0 +1,43 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: mysql-clean-job
+  namespace: pgs-upskill
+  labels:
+    app: mysql
+spec:
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: mysql-clean
+              image: mysql:5.7
+              command:
+                - bash
+                - "-c"
+                - |
+                  set -ex
+                  mysql -h mysql-0.mysql-service.pgs-upskill.svc.cluster.local -u root -p${MYSQL_ROOT_PASSWORD} \
+                        -e "drop database kube; create database kube"
+                  mysql -h mysql-0.mysql-service.pgs-upskill.svc.cluster.local -u root -p${MYSQL_ROOT_PASSWORD} \
+                        kube < /var/local/mysql-sql/kube.schema.dump.sql
+              env:
+                - name: MYSQL_ROOT_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: mysql-secret
+                      key: root_password
+              volumeMounts:
+                - mountPath: /var/local/mysql-sql
+                  name: mysql-sql
+                  readOnly: true
+          volumes:
+            - name: mysql-sql
+              configMap:
+                name: mysql-sql
+                items:
+                  - key: "kube.schema.dump.sql"
+                    path: "kube.schema.dump.sql"
+          restartPolicy: OnFailure
+  schedule: "*/10 * * * *"

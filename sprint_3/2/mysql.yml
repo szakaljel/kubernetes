@@ -1,0 +1,125 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mysql
+  namespace: pgs-upskill
+  labels:
+    app: mysql
+spec:
+  selector:
+    matchLabels:
+      app: mysql
+  serviceName: mysql-service
+  replicas: 2
+  template:
+    metadata:
+      generateName: mysql-instance-
+      namespace: pgs-upskill
+      labels:
+        app: mysql
+    spec:
+      initContainers:
+        - name: init-mysql
+          image: mysql:5.7
+          command:
+            - bash
+            - "-c"
+            - |
+              set -ex
+              [[ `hostname` =~ -([0-9]+)$ ]] || exit 1
+              ordinal=${BASH_REMATCH[1]}
+              echo [mysqld] > /etc/mysql/conf.d/server-id.cnf
+              echo server-id=$((100 + $ordinal)) >> /etc/mysql/conf.d/server-id.cnf
+              if [[ $ordinal -eq 0 ]]; then
+                echo [mysqld] > /etc/mysql/conf.d/master.cnf
+                echo log-bin >> /etc/mysql/conf.d/master.cnf
+                echo default-authentication-plugin=mysql_native_password >> /etc/mysql/conf.d/master.cnf
+              else
+                echo [mysqld] > /etc/mysql/conf.d/slave.cnf
+                echo default-authentication-plugin=mysql_native_password >> /etc/mysql/conf.d/slave.cnf
+
+                ./entrypoint.sh mysqld &
+                sleep 20
+
+                # check if slave is running
+                slave_running=`mysql -h 127.0.0.1 -u root -p${MYSQL_ROOT_PASSWORD} -e 'show slave status \G' | grep 'Slave_IO_Running: Yes' || exit 0`
+                if [[ -z ${slave_running} ]]; then
+                  # set master and run slave
+                  mysql -h 127.0.0.1 -u root -p${MYSQL_ROOT_PASSWORD} \
+                        -e "CHANGE MASTER TO \
+                              MASTER_HOST='mysql-0.mysql-service.pgs-upskill.svc.cluster.local', \
+                              MASTER_USER='root', \
+                              MASTER_PASSWORD='${MYSQL_ROOT_PASSWORD}', \
+                              MASTER_CONNECT_RETRY=10, \
+                              MASTER_LOG_FILE='mysql-0-bin.000003', \
+                              MASTER_LOG_POS=154; \
+                              START SLAVE;" || exit 1
+                fi
+              fi
+          env:
+            - name: MYSQL_DATABASE
+              value: kube
+            - name: MYSQL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: username
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: password
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: root_password
+          volumeMounts:
+            - mountPath: /var/lib/mysql
+              name: mysql-pvc
+            - name: conf
+              mountPath: /etc/mysql/conf.d
+      containers:
+        - name: mysql
+          image: mysql:5.7
+          ports:
+            - containerPort: 3306
+          env:
+            - name: MYSQL_DATABASE
+              value: kube
+            - name: MYSQL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: username
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: password
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: root_password
+          volumeMounts:
+            - mountPath: /var/lib/mysql
+              name: mysql-pvc
+            - name: conf
+              mountPath: /etc/mysql/conf.d
+      volumes:
+        - name: conf
+          emptyDir: {}
+  volumeClaimTemplates:
+    - metadata:
+        name: mysql-pvc
+        namespace: pgs-upskill
+        labels:
+          app: mysql
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: manual
+        resources:
+          requests:
+            storage: 2Gi
+

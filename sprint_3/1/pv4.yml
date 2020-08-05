@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  namespace: pgs-upskill
+  name: mysql-pv-4
+  labels:
+    app: mysql
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 2Gi
+  persistentVolumeReclaimPolicy: Recycle
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: /data/mysql/4/
+    type: DirectoryOrCreate
+
+
+
+
