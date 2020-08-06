@@ -11,6 +11,10 @@ spec:
       app: mysql
   serviceName: mysql-service
   replicas: 3
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 1
   template:
     metadata:
       generateName: mysql-instance-
