@@ -149,6 +149,44 @@ spec:
               name: mysql-pvc
             - name: conf
               mountPath: /etc/mysql/conf.d
+        - name: mysql-metrics
+          image: mysql:5.7
+          command:
+            - bash
+            - "-c"
+            - |
+              set -e
+              sleep 30
+              [[ `hostname` =~ -([0-9]+)$ ]] || exit 1
+              ordinal=${BASH_REMATCH[1]}
+              metrics=(
+                  "Bytes_received"
+                  "Bytes_sent"
+                  "Queries"
+                  "Questions"
+              )
+              while true
+              do
+                mysql -h "mysql-${ordinal}" -u root -p${MYSQL_ROOT_PASSWORD} -e 'SHOW GLOBAL STATUS' -N > metrics.txt
+                out="`date` ;"
+                while read line; do
+                  for metric in "${metrics[@]}"; do
+                    if [[ $line =~ $metric ]]
+                      then
+                       out="$out $line ;"
+                      fi
+                  done
+                done <metrics.txt
+                printf "$out \n"
+
+                sleep 300
+              done
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: root_password
       volumes:
         - name: conf
           emptyDir: {}
