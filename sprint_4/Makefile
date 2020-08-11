@@ -23,3 +23,33 @@ docker_build_time:
 docker_build_geo:
 	chmod +x geo/docker/build.sh
 	cd geo && ./docker/build.sh
+
+kubernetes_db_up:
+	kubectl create secret generic geo-mysql-secret --from-env-file=kubernetes/db/geo_mysql_secret.env --namespace=pgs-upskill
+	kubectl create configmap geo-mysql-sql --from-file=geo/db/schema.sql --from-file=geo/db/data.sql --namespace=pgs-upskill
+	kubectl apply -f kubernetes/db/geo_pv.yml
+	kubectl apply -f kubernetes/db/geo_mysql_service.yml
+	kubectl apply -f kubernetes/db/geo_mysql.yml
+
+kubernetes_db_down:
+	kubectl delete -f kubernetes/db/geo_mysql.yml
+	kubectl delete -f kubernetes/db/geo_mysql_service.yml
+	kubectl delete -f kubernetes/db/geo_pv.yml
+	kubectl delete configmap geo-mysql-sql --namespace=pgs-upskill
+	kubectl delete secret geo-mysql-secret --namespace=pgs-upskill
+
+kubernetes_geo_up:
+	kubectl apply -f kubernetes/geo/geo.yml
+	kubectl apply -f kubernetes/geo/geo_service.yml
+
+kubernetes_geo_down:
+	kubectl delete -f kubernetes/geo/geo_service.yml
+	kubectl delete -f kubernetes/geo/geo.yml
+
+kubernetes_time_up:
+	kubectl apply -f kubernetes/time/time.yml
+	kubectl apply -f kubernetes/time/time_service.yml
+
+kubernetes_time_down:
+	kubectl delete -f kubernetes/time/time_service.yml
+	kubectl delete -f kubernetes/time/time.yml
