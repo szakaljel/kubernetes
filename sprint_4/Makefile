@@ -15,3 +15,11 @@ run_time_server:
 
 run_geo_server:
 	python geo/dev_server.py
+
+docker_build_time:
+	chmod +x time/docker/build.sh
+	cd time && ./docker/build.sh
+
+docker_build_geo:
+	chmod +x geo/docker/build.sh
+	cd geo && ./docker/build.sh
