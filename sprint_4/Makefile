@@ -53,3 +53,9 @@ kubernetes_time_up:
 kubernetes_time_down:
 	kubectl delete -f kubernetes/time/time_service.yml
 	kubectl delete -f kubernetes/time/time.yml
+
+kubernetes_namespace_up:
+	kubectl create namespace pgs-upskill
+
+kubernetes_namespace_delete:
+	kubectl delete namespace pgs-upskill
