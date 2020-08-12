@@ -1,11 +1,11 @@
 from typing import AsyncGenerator
 from abc import ABC, abstractmethod
-import asyncio
 
 import aiohttp
 import async_timeout
 
 from app.config import config
+from app.bl.exceptions import BLUpstreamError, BLObjectDoesNotExistsError
 
 
 class AsyncBaseSession(ABC):
@@ -54,4 +54,9 @@ class GeoService:
         self._url = config.geo_service_url
 
     async def get_city(self, city_id):
-        return await AsyncRequest.get(f'{self._url}/cities/{city_id}')
+        try:
+            return await AsyncRequest.get(f'{self._url}/cities/{city_id}')
+        except aiohttp.client_exceptions.ClientConnectorError:
+            raise BLUpstreamError('geo service is not available')
+        except aiohttp.client_exceptions.ContentTypeError:
+            raise BLObjectDoesNotExistsError(f'city with id {city_id} does not exist')

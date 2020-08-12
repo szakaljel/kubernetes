@@ -1,14 +1,27 @@
 from tortoise.contrib.sanic import register_tortoise
 from app.base import app
-from app.ports.resources.cities import CityDetailResource
+from app.ports.resources.cities import CityDetailResource, CitiesResource
 from app.config import config
+from app.error_handlers import register_error_handlers
 
-
+app.add_route(CitiesResource.as_view(), '/cities')
 app.add_route(CityDetailResource.as_view(), '/cities/<city_id>')
 
 register_tortoise(
     app=app,
-    db_url=f'mysql://{config.db_user}:{config.db_password}@{config.db_host}:{config.db_port}/{config.db_name}',
-    modules={"models": ["app.ports.repos.models"]},
+    config={
+        'connections': {
+            'read': f'mysql://{config.db_user}:{config.db_password}@'
+                    f'{config.db_host_read}:{config.db_port}/{config.db_name}?charset=utf8',
+            'write': f'mysql://{config.db_user}:{config.db_password}@'
+                     f'{config.db_host_write}:{config.db_port}/{config.db_name}?charset=utf8'
+        },
+        "apps": {
+            'read': {'models': ['app.ports.repos.read_models'], 'default_connection': 'read'},
+            'write': {"models": ['app.ports.repos.write_models'], 'default_connection': 'write'}
+        }
+    },
     generate_schemas=False
 )
+
+register_error_handlers(app)
