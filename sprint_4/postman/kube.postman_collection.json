@@ -1,0 +1,92 @@
+{
+	"info": {
+		"_postman_id": "ced183b0-e503-48eb-ad8a-441e0380ee4d",
+		"name": "kube",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "city_get",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{geo_url}}/cities/1",
+					"host": [
+						"{{geo_url}}"
+					],
+					"path": [
+						"cities",
+						"1"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "cities_get",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{geo_url}}/cities",
+					"host": [
+						"{{geo_url}}"
+					],
+					"path": [
+						"cities"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "city_post",
+			"protocolProfileBehavior": {
+				"disabledSystemHeaders": {}
+			},
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"name\": \"Gdańsk\",\n    \"population\": 500000,\n    \"time_zone\": \"Europe/Warsaw\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{geo_url}}/cities",
+					"host": [
+						"{{geo_url}}"
+					],
+					"path": [
+						"cities"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "time_get",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{time_url}}/times/3",
+					"host": [
+						"{{time_url}}"
+					],
+					"path": [
+						"times",
+						"3"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"protocolProfileBehavior": {}
+}
