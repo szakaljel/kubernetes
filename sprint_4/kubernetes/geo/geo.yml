@@ -43,3 +43,10 @@ spec:
                 secretKeyRef:
                   name: geo-mysql-secret
                   key: password
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 5
