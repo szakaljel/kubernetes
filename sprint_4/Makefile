@@ -60,3 +60,9 @@ kubernetes_namespace_up:
 
 kubernetes_namespace_down:
 	kubectl delete namespace pgs-upskill
+
+kubernetes_metric_server_up:
+	kubectl apply -f kubernetes/metric_server/components.yaml
+
+kubernetes_metric_server_down:
+	kubectl delete -f kubernetes/metric_server/components.yaml
