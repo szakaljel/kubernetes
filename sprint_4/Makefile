@@ -58,5 +58,5 @@ kubernetes_time_down:
 kubernetes_namespace_up:
 	kubectl create namespace pgs-upskill
 
-kubernetes_namespace_delete:
+kubernetes_namespace_down:
 	kubectl delete namespace pgs-upskill
