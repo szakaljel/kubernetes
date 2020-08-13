@@ -24,6 +24,23 @@
 			"response": []
 		},
 		{
+			"name": "geo_health",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{geo_url}}/health",
+					"host": [
+						"{{geo_url}}"
+					],
+					"path": [
+						"health"
+					]
+				}
+			},
+			"response": []
+		},
+		{
 			"name": "cities_get",
 			"request": {
 				"method": "GET",
