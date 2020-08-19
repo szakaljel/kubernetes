@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-geo-service
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ .Release.Name }}-geo
+spec:
+  selector:
+    app: {{ .Release.Name }}-geo
+  ports:
+    - port: 80
+      targetPort: 8000
+      name: app
+  type: NodePort

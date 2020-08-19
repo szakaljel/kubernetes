@@ -1,0 +1,12 @@
+db:
+  replicas: 3
+  host_path_prefix: "/data/mysql"
+  storage_size: 2Gi
+  name: geo
+  username: geo_user
+  password: geo_password
+  root_password: geo_root_password
+
+app:
+  replicas: 3
+  image_version: 1.0.0
