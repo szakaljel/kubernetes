@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-time-service
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ .Release.Name }}-time
+spec:
+  selector:
+    app: {{ .Release.Name }}-time
+  ports:
+    - port: 80
+      targetPort: 7000
+      name: app
+  type: NodePort
