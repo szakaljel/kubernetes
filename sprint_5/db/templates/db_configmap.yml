@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: {{ $.Release.Namespace }}
+  name: {{ $.Release.Name }}-db-configmap
+  labels:
+    app: {{ $.Release.Name }}-db
+data:
+  init.sql: |-
+{{ .Values.init_sql | indent 4 }}

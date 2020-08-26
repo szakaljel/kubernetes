@@ -16,11 +16,18 @@ spec:
       labels:
         app: {{ .Release.Name }}-museum
     spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        fsGroupChangePolicy: "Always"
       containers:
         - name: museum
           image: chartmuseum/chartmuseum
           ports:
             - containerPort: {{ .Values.port }}
+          securityContext:
+            runAsUser: 0
           env:
             - name: PORT
               value: "{{ .Values.port }}"
@@ -33,9 +40,9 @@ spec:
           volumeMounts:
             - mountPath: "{{ .Values.guest_path }}"
               name: museum-volume
+              readOnly: false
       volumes:
         - name: museum-volume
           persistentVolumeClaim:
             claimName: {{ .Release.Name }}-museum-pvc
-
-
+            readOnly: false

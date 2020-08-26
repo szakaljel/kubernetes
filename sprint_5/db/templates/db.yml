@@ -1,21 +1,21 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ .Release.Name }}-geo-db
+  name: {{ .Release.Name }}-db
   namespace: {{ .Release.Namespace }}
   labels:
-    app: {{ .Release.Name }}-geo-db
+    app: {{ .Release.Name }}-db
 spec:
   selector:
     matchLabels:
-      app: {{ .Release.Name }}-geo-db
-  serviceName: {{ .Release.Name }}-geo-db-write-service
+      app: {{ .Release.Name }}-db
+  serviceName: {{ .Release.Name }}-db-write-service
   replicas: {{ .Values.replicas }}
   template:
     metadata:
       namespace: {{ .Release.Namespace }}
       labels:
-        app: {{ .Release.Name }}-geo-db
+        app: {{ .Release.Name }}-db
     spec:
       initContainers:
         - name: init-mysql
@@ -46,7 +46,7 @@ spec:
                   # set master and run slave
                   mysql -h 127.0.0.1 -u root -p${MYSQL_ROOT_PASSWORD} \
                         -e "CHANGE MASTER TO \
-                              MASTER_HOST='{{ .Release.Name }}-geo-db-0.{{ .Release.Name }}-geo-db-write-service.{{ .Release.Namespace }}.svc.cluster.local', \
+                              MASTER_HOST='{{ .Release.Name }}-db-0.{{ .Release.Name }}-db-write-service.{{ .Release.Namespace }}.svc.cluster.local', \
                               MASTER_USER='root', \
                               MASTER_PASSWORD='${MYSQL_ROOT_PASSWORD}', \
                               MASTER_CONNECT_RETRY=10, \
@@ -59,26 +59,26 @@ spec:
             - name: MYSQL_DATABASE
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Release.Name }}-geo-db-secret
+                  name: {{ .Release.Name }}-db-secret
                   key: name
             - name: MYSQL_USER
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Release.Name }}-geo-db-secret
+                  name: {{ .Release.Name }}-db-secret
                   key: username
             - name: MYSQL_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Release.Name }}-geo-db-secret
+                  name: {{ .Release.Name }}-db-secret
                   key: password
             - name: MYSQL_ROOT_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Release.Name }}-geo-db-secret
+                  name: {{ .Release.Name }}-db-secret
                   key: root_password
           volumeMounts:
             - mountPath: /var/lib/mysql
-              name: {{ .Release.Name }}-geo-db-pvc
+              name: {{ .Release.Name }}-db-pvc
             - name: conf
               mountPath: /etc/mysql/conf.d
         - name: init-mysql-schema-and-data
@@ -97,37 +97,36 @@ spec:
 
                 tables_exists=`mysql -h 127.0.0.1 -u root -p${MYSQL_ROOT_PASSWORD} -D ${MYSQL_DATABASE} -e 'show tables \G'`
                 if [[ -z $tables_exists ]]; then
-                  mysql -h 127.0.0.1 -u root -p${MYSQL_ROOT_PASSWORD} -D ${MYSQL_DATABASE} < /var/local/geo-mysql-sql/schema.sql
-                  mysql -h 127.0.0.1 -u root -p${MYSQL_ROOT_PASSWORD} -D ${MYSQL_DATABASE} < /var/local/geo-mysql-sql/data.sql
+                  mysql -h 127.0.0.1 -u root -p${MYSQL_ROOT_PASSWORD} -D ${MYSQL_DATABASE} < /var/local/geo-mysql-sql/init.sql
                 fi
               fi
           env:
             - name: MYSQL_DATABASE
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Release.Name }}-geo-db-secret
+                  name: {{ .Release.Name }}-db-secret
                   key: name
             - name: MYSQL_USER
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Release.Name }}-geo-db-secret
+                  name: {{ .Release.Name }}-db-secret
                   key: username
             - name: MYSQL_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Release.Name }}-geo-db-secret
+                  name: {{ .Release.Name }}-db-secret
                   key: password
             - name: MYSQL_ROOT_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Release.Name }}-geo-db-secret
+                  name: {{ .Release.Name }}-db-secret
                   key: root_password
           volumeMounts:
             - mountPath: /var/lib/mysql
-              name: {{ .Release.Name }}-geo-db-pvc
+              name: {{ .Release.Name }}-db-pvc
             - name: conf
               mountPath: /etc/mysql/conf.d
-            - name: {{ .Release.Name }}-geo-db-configmap
+            - name: {{ .Release.Name }}-db-configmap
               mountPath: /var/local/geo-mysql-sql
               readOnly: true
       containers:
@@ -139,45 +138,43 @@ spec:
             - name: MYSQL_DATABASE
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Release.Name }}-geo-db-secret
+                  name: {{ .Release.Name }}-db-secret
                   key: name
             - name: MYSQL_USER
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Release.Name }}-geo-db-secret
+                  name: {{ .Release.Name }}-db-secret
                   key: username
             - name: MYSQL_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Release.Name }}-geo-db-secret
+                  name: {{ .Release.Name }}-db-secret
                   key: password
             - name: MYSQL_ROOT_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Release.Name }}-geo-db-secret
+                  name: {{ .Release.Name }}-db-secret
                   key: root_password
           volumeMounts:
             - mountPath: /var/lib/mysql
-              name: {{ .Release.Name }}-geo-db-pvc
+              name: {{ .Release.Name }}-db-pvc
             - name: conf
               mountPath: /etc/mysql/conf.d
       volumes:
         - name: conf
           emptyDir: {}
-        - name: {{ .Release.Name }}-geo-db-configmap
+        - name: {{ .Release.Name }}-db-configmap
           configMap:
-            name: {{ .Release.Name }}-geo-db-configmap
+            name: {{ .Release.Name }}-db-configmap
             items:
-              - key: "data.sql"
-                path: "data.sql"
-              - key: "schema.sql"
-                path: "schema.sql"
+              - key: init.sql
+                path: init.sql
   volumeClaimTemplates:
     - metadata:
-        name: {{ .Release.Name }}-geo-db-pvc
+        name: {{ .Release.Name }}-db-pvc
         namespace: {{ .Release.Namespace }}
         labels:
-          app: {{ .Release.Name }}-geo-db
+          app: {{ .Release.Name }}-db
       spec:
         accessModes: ["ReadWriteOnce"]
         storageClassName: manual
