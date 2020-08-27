@@ -25,9 +25,9 @@ spec:
             - containerPort: 8000
           env:
             - name: KU_GEO_DB_HOST_READ
-              value: "{{ .Release.Name }}-geo-db-read-service.{{ .Release.Namespace }}.svc.cluster.local"
+              value: "{{ .Release.Name }}-db-read-service.{{ .Release.Namespace }}.svc.cluster.local"
             - name: KU_GEO_DB_HOST_WRITE
-              value: "{{ .Release.Name }}-geo-db-0.{{ .Release.Name }}-geo-db-write-service.{{ .Release.Namespace }}.svc.cluster.local"
+              value: "{{ .Release.Name }}-db-0.{{ .Release.Name }}-db-write-service.{{ .Release.Namespace }}.svc.cluster.local"
             - name: KU_GEO_DB_NAME
               valueFrom:
                 secretKeyRef:
