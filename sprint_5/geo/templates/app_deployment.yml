@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-geo-deployment
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ .Release.Name }}-geo
+spec:
+  replicas: {{ .Values.app.replicas }}
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-geo
+  template:
+    metadata:
+      name: {{ .Release.Name }}-geo-
+      namespace: {{ .Release.Namespace }}
+      labels:
+        app: {{ .Release.Name }}-geo
+    spec:
+      containers:
+        - name: app
+          image: geo-service:{{ .Values.app.image_version }}
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8000
+          env:
+            - name: KU_GEO_DB_HOST_READ
+              value: "{{ .Release.Name }}-db-read-service.{{ .Release.Namespace }}.svc.cluster.local"
+            - name: KU_GEO_DB_HOST_WRITE
+              value: "{{ .Release.Name }}-db-0.{{ .Release.Name }}-db-write-service.{{ .Release.Namespace }}.svc.cluster.local"
+            - name: KU_GEO_DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-geo-db-secret
+                  key: name
+            - name: KU_GEO_DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-geo-db-secret
+                  key: username
+            - name: KU_GEO_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-geo-db-secret
+                  key: password
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 5

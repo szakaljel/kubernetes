@@ -1,0 +1,5 @@
+Replicated mysql database
+    write: {{ .Release.Name }}-db-0.{{ $.Release.Name }}-db-write-service.{{ .Release.Namespace }}.svc.cluster.local
+    read: {{ $.Release.Name }}-db-read-service.{{ .Release.Namespace }}.svc.cluster.local
+
+While uninstalling chart please remove pvc manually

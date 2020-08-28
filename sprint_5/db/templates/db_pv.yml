@@ -1,0 +1,22 @@
+{{ range $index := until ( int .Values.replicas ) }}
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  namespace: {{ $.Release.Namespace }}
+  name: {{ $.Release.Name }}-db-pv-{{ $index }}
+  labels:
+    app: {{ $.Release.Name }}-db
+spec:
+  storageClassName: manual
+  capacity:
+    storage: {{ $.Values.storage_size }}
+  persistentVolumeReclaimPolicy: Recycle
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: {{ $.Values.host_path_prefix }}/{{ $index }}/
+    type: DirectoryOrCreate
+{{ if lt $index ( sub $.Values.replicas 1 ) }}
+---
+{{ end }}
+{{ end }}

@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $.Release.Name }}-db-read-service
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    app: {{ $.Release.Name }}-db
+spec:
+  ports:
+  - name: mysql
+    port: 3306
+  selector:
+    app: {{ $.Release.Name }}-db

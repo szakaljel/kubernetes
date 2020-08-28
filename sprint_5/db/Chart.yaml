@@ -1,0 +1,13 @@
+apiVersion: v2
+name: db
+version: 1.0.0
+description: Replicated mysql database
+type: application
+appVersion: 5.7
+keywords:
+  - database
+  - mysql
+maintainers:
+  - name: rjelinki
+    email: rjelinski@pgs-soft.com
+

@@ -1,0 +1,16 @@
+apiVersion: v2
+name: geo
+version: 1.0.0
+description: Geo service, contains service and mysql replicated database
+type: application
+dependencies:
+  - name: db
+    version: "1.0.0"
+    repository: "http://192.168.39.79:31222"
+appVersion: 1.0.0
+keywords:
+  - API
+  - Geo application
+maintainers:
+  - name: rjelinski
+    email: rjelinski@pgs-soft.com

@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ .Release.Name }}-geo-test-api
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ .Release.Name }}-geo
+  annotations:
+    "helm.sh/hook": test
+spec:
+  containers:
+    - name: api-call
+      image: python:3.8-buster
+      command:
+        - bash
+        - "-c"
+        - |
+          set -ex
+          curl {{ .Release.Name }}-geo-service.{{ .Release.Namespace }}.svc.cluster.local/health
+  restartPolicy: Never

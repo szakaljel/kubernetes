@@ -1,0 +1,184 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .Release.Name }}-db
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ .Release.Name }}-db
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-db
+  serviceName: {{ .Release.Name }}-db-write-service
+  replicas: {{ .Values.replicas }}
+  template:
+    metadata:
+      namespace: {{ .Release.Namespace }}
+      labels:
+        app: {{ .Release.Name }}-db
+    spec:
+      initContainers:
+        - name: init-mysql
+          image: mysql:5.7
+          command:
+            - bash
+            - "-c"
+            - |
+              set -ex
+              [[ `hostname` =~ -([0-9]+)$ ]] || exit 1
+              ordinal=${BASH_REMATCH[1]}
+              echo [mysqld] > /etc/mysql/conf.d/server-id.cnf
+              echo server-id=$((100 + $ordinal)) >> /etc/mysql/conf.d/server-id.cnf
+              if [[ $ordinal -eq 0 ]]; then
+                echo [mysqld] > /etc/mysql/conf.d/master.cnf
+                echo log-bin >> /etc/mysql/conf.d/master.cnf
+                echo default-authentication-plugin=mysql_native_password >> /etc/mysql/conf.d/master.cnf
+              else
+                echo [mysqld] > /etc/mysql/conf.d/slave.cnf
+                echo default-authentication-plugin=mysql_native_password >> /etc/mysql/conf.d/slave.cnf
+
+                ./entrypoint.sh mysqld &
+                sleep 20
+
+                # check if slave is running
+                slave_running=`mysql -h 127.0.0.1 -u root -p${MYSQL_ROOT_PASSWORD} -e 'show slave status \G' | grep 'Slave_IO_Running: Yes' || exit 0`
+                if [[ -z ${slave_running} ]]; then
+                  # set master and run slave
+                  mysql -h 127.0.0.1 -u root -p${MYSQL_ROOT_PASSWORD} \
+                        -e "CHANGE MASTER TO \
+                              MASTER_HOST='{{ .Release.Name }}-db-0.{{ .Release.Name }}-db-write-service.{{ .Release.Namespace }}.svc.cluster.local', \
+                              MASTER_USER='root', \
+                              MASTER_PASSWORD='${MYSQL_ROOT_PASSWORD}', \
+                              MASTER_CONNECT_RETRY=10, \
+                              MASTER_LOG_FILE='mysql-0-bin.000003', \
+                              MASTER_LOG_POS=154; \
+                              START SLAVE;" || exit 1
+                fi
+              fi
+          env:
+            - name: MYSQL_DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-db-secret
+                  key: name
+            - name: MYSQL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-db-secret
+                  key: username
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-db-secret
+                  key: password
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-db-secret
+                  key: root_password
+          volumeMounts:
+            - mountPath: /var/lib/mysql
+              name: {{ .Release.Name }}-db-pvc
+            - name: conf
+              mountPath: /etc/mysql/conf.d
+        - name: init-mysql-schema-and-data
+          image: mysql:5.7
+          command:
+            - bash
+            - "-c"
+            - |
+              set -ex
+              [[ `hostname` =~ -([0-9]+)$ ]] || exit 1
+              ordinal=${BASH_REMATCH[1]}
+              if [[ $ordinal -eq 0 ]]; then
+
+                ./entrypoint.sh mysqld &
+                sleep 20
+
+                tables_exists=`mysql -h 127.0.0.1 -u root -p${MYSQL_ROOT_PASSWORD} -D ${MYSQL_DATABASE} -e 'show tables \G'`
+                if [[ -z $tables_exists ]]; then
+                  mysql -h 127.0.0.1 -u root -p${MYSQL_ROOT_PASSWORD} -D ${MYSQL_DATABASE} < /var/local/geo-mysql-sql/init.sql
+                fi
+              fi
+          env:
+            - name: MYSQL_DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-db-secret
+                  key: name
+            - name: MYSQL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-db-secret
+                  key: username
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-db-secret
+                  key: password
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-db-secret
+                  key: root_password
+          volumeMounts:
+            - mountPath: /var/lib/mysql
+              name: {{ .Release.Name }}-db-pvc
+            - name: conf
+              mountPath: /etc/mysql/conf.d
+            - name: {{ .Release.Name }}-db-configmap
+              mountPath: /var/local/geo-mysql-sql
+              readOnly: true
+      containers:
+        - name: mysql
+          image: mysql:5.7
+          ports:
+            - containerPort: 3306
+          env:
+            - name: MYSQL_DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-db-secret
+                  key: name
+            - name: MYSQL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-db-secret
+                  key: username
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-db-secret
+                  key: password
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-db-secret
+                  key: root_password
+          volumeMounts:
+            - mountPath: /var/lib/mysql
+              name: {{ .Release.Name }}-db-pvc
+            - name: conf
+              mountPath: /etc/mysql/conf.d
+      volumes:
+        - name: conf
+          emptyDir: {}
+        - name: {{ .Release.Name }}-db-configmap
+          configMap:
+            name: {{ .Release.Name }}-db-configmap
+            items:
+              - key: init.sql
+                path: init.sql
+  volumeClaimTemplates:
+    - metadata:
+        name: {{ .Release.Name }}-db-pvc
+        namespace: {{ .Release.Namespace }}
+        labels:
+          app: {{ .Release.Name }}-db
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: manual
+        resources:
+          requests:
+            storage: {{ .Values.storage_size }}
+
