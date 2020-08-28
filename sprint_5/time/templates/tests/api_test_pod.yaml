@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ .Release.Name }}-time-test-api
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ .Release.Name }}-time
+  annotations:
+    "helm.sh/hook": test
+spec:
+  containers:
+    - name: api_call
+      image: python:3.8-buster
+      command:
+        - bash
+        - "-c"
+        - |
+          set -ex
+          curl {{ .Release.Name }}-time-service.{{ .Release.Namespace }}.svc.cluster.local/times/1
+  restartPolicy: Never
