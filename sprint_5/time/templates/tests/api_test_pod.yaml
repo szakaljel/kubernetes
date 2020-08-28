@@ -9,7 +9,7 @@ metadata:
     "helm.sh/hook": test
 spec:
   containers:
-    - name: api_call
+    - name: api-call
       image: python:3.8-buster
       command:
         - bash

@@ -31,10 +31,16 @@ helm search repo museum
 # update url in dependencies may be necessary
 helm dependency update ./geo
 helm install geo-release ./geo
+
+# test
+helm test geo-release
 ```
 
 ## Install time application
 ```
 # if other release name used for geo, please adjust variables
 helm install time-release ./time
+
+# test
+helm test time-release
 ```
