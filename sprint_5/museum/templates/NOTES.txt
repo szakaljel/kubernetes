@@ -1,0 +1,2 @@
+Chart museum
+    API: {{ .Release.Name }}-museum-service.{{ .Release.Namespace }}.svc.cluster.local
