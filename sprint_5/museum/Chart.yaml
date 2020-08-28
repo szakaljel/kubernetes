@@ -3,3 +3,10 @@ name: museum
 version: 1.0.0
 description: chartmuseum
 type: application
+appVersion: 1.0.0
+keywords:
+  - API
+  - Time application
+maintainers:
+  - name: rjelinski
+    email: rjelinski@Pgs-soft.com
